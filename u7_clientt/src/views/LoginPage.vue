@@ -16,13 +16,12 @@
     <!-- Left Panel - Branding -->
     <div class="left-panel">
       <div class="branding-content">
-        <div class="logo-section">
+        <!-- <div class="logo-section">
           <router-link to="/" class="logo-icon">
             <img src="../assets/img/logo.png" alt="" width="150" height="150" />
           </router-link>
-          <h1 class="brand-title">u7 Quizzes</h1>
-          <p class="brand-subtitle">Nền tảng học tập thông minh</p>
-        </div>
+    
+        </div> -->
         <div class="feature-highlights">
           <div class="feature-item animate-slide-in" style="animation-delay: 0.2s;">
             <div class="feature-icon">

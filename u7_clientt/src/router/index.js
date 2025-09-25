@@ -40,6 +40,35 @@ const routes = [
           path: '/privacy',
           name: 'Privacy',
           component: () => import('../views/PrivacyPage.vue')
+        },
+         {
+          path: '/register',
+          name: 'Register',
+          component: () => import('../views/RegisterPage.vue')
+        },
+        {
+          path: '/lobby/:sessionId',
+          name: 'Lobby',
+          
+          component: () => import('../views/Lobby.vue')
+        },
+        {
+          path: '/quiz/details',
+          name: 'details',
+          
+          component: () => import('../views/QuizDetail.vue')
+        },
+        {
+          path: '/challenge/multiplayer/:participantId',
+          name: 'multiplayer',
+          
+          component: () => import('../views/MutiChallenge.vue')
+        },
+        {
+          path: '/challenge/singleplayer/',
+          name: 'singleplayer',
+          
+          component: () => import('../views/SingleChallenge.vue')
         }
 
 

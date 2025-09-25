@@ -1,7 +1,14 @@
 <template>
   <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
-      <router-link class="navbar-brand" to="/">U7 Quizzes</router-link>
+      <router-link class="navbar-brand d-flex align-items-center" to="/">
+        <img 
+          src="../assets/img/logo.png" 
+          alt="U7 Quizzes Logo" 
+          class="navbar-logo me-2"
+        >
+        <!-- <span class="brand-text">Quizzes</span> -->
+      </router-link>
       <button 
         class="navbar-toggler" 
         type="button" 
@@ -37,9 +44,9 @@
               <i class="fas fa-sign-in-alt me-1"></i>Tham gia phòng
             </router-link>
           </li>
-          <li class="nav-item" v-if="!currentUser">
+          <li class="nav-item" v-if="currentUser === null">
             <router-link class="btn btn-outline-primary ms-3" to="/login">
-              <i class="fas fa-sign-in-alt me-1"></i>Đăng Nhập
+              Đăng Nhập
             </router-link>
           </li>
         </ul>
@@ -74,13 +81,16 @@ const test = async () => {
 }
 
 onMounted(() => {
-  userStore.loadUser()
+   userStore.loadUser()
 })
 </script>
 
 
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
@@ -150,63 +160,88 @@ body {
         padding: 0;
     }
 /* Elegant Navbar */
-        .navbar {
-            background: linear-gradient(90deg, #6c63ff 0%, #a29bfe 100%);
-            box-shadow: 0 8px 30px rgb(108 99 255 / 0.4);
-            padding: 0.8rem 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 1030;
-        }
-        .navbar .container {
-            max-width: 1140px;
-        }
-        .navbar-brand {
-            font-weight: 800;
-            font-size: 1.95rem;
-            color: #fff !important;
-            letter-spacing: 2px;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            font-style: italic;
-            user-select: none;
-            transition: color 0.3s ease;
-        }
-        .navbar-brand:hover {
-            color: #d1c4ff !important;
-            text-shadow: 0 3px 12px rgba(255, 255, 255, 0.7);
-        }
-        .nav-link {
-            color: #e0dbff;
-            font-weight: 600;
-            font-size: 1rem;
-            margin: 0 0.3rem;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.5rem;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            position: relative;
-        }
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            width: 0%;
-            height: 3px;
-            bottom: 0;
-            left: 0;
-            background: #fff;
-            transition: width 0.3s ease;
-            border-radius: 2px;
-        }
-        .nav-link:hover,
-        .nav-link.active {
-            color: #fff;
-            background-color: rgba(255 255 255 / 0.25);
-            box-shadow: 0 4px 15px rgb(255 255 255 / 0.3);
-            text-shadow: 0 0 5px rgba(255 255 255 / 0.7);
-        }
-        .nav-link:hover::after,
-        .nav-link.active::after {
-            width: 100%;
-        }
+       .navbar {
+  background: linear-gradient(90deg, #6c63ff 0%, #a29bfe 100%);
+  box-shadow: 0 8px 30px rgb(108 99 255 / 0.4);
+  padding: 0.8rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+.navbar .container {
+  max-width: 1140px;
+}
+
+.navbar-brand {
+  text-decoration: none !important;
+  transition: all 0.3s ease;
+}
+
+.navbar-brand:hover {
+  transform: translateY(-1px);
+}
+
+.navbar-brand:hover .brand-text {
+  color: #d1c4ff !important;
+  text-shadow: 0 3px 12px rgba(255, 255, 255, 0.7);
+}
+
+/* Navigation links - Fixed spacing */
+.navbar-nav {
+  align-items: center;
+}
+
+.nav-item {
+  margin: 0 0.25rem; /* Consistent spacing between all nav items */
+}
+.nav-item:first-child {
+    position: relative;
+    bottom:  8px;
+}
+
+.nav-item:last-child {
+    position: relative;
+    top: 3px;
+}
+
+
+
+.nav-link {
+  color: #e0dbff !important;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0%;
+  height: 3px;
+  bottom: 0;
+  left: 0;
+  background: #fff;
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #fff !important;
+  background-color: rgba(255 255 255 / 0.25);
+  box-shadow: 0 4px 15px rgb(255 255 255 / 0.3);
+  text-shadow: 0 0 5px rgba(255 255 255 / 0.7);
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
         .btn-outline-primary {
             border-color: #d1c4ff;
             color: #000000;
@@ -315,38 +350,7 @@ body {
             box-shadow: 0 10px 30px rgb(74 71 213 / 0.5);
             transform: translateY(-3px);
         }
-        .quiz-card {
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 8px 20px rgb(108 99 255 / 0.15);
-            transition: all 0.4s ease;
-            background: #fff;
-        }
-        .quiz-card:hover {
-            box-shadow: 0 12px 30px rgb(108 99 255 / 0.4);
-            transform: translateY(-8px);
-        }
-        .card-title {
-            color: #4a47d5;
-            font-weight: 700;
-            font-size: 1.25rem;
-            letter-spacing: 0.5px;
-        }
-        .card-text {
-            color: #6b6b6b;
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-        .card-footer {
-            background: #f7f7ff;
-            border-top: none;
-            font-weight: 600;
-            color: #6c63ff;
-            font-size: 0.9rem;
-        }
-        .card-footer i {
-            color: #a29bfe;
-        }
+    
         .table-primary {
             background: #d6d2ff !important;
             color: #4a47d5 !important;
@@ -624,5 +628,32 @@ body {
         font-size: 0.85rem;
         text-align: left;
     }
-    
+    /* Logo styling */
+.navbar-logo {
+  height: 50px;
+  width: auto;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  
+}
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+}
+.brand-text {
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #fff !important;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-style: italic;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+.navbar-brand:hover .brand-text {
+  color: #d1c4ff !important;
+  text-shadow: 0 3px 12px rgba(255, 255, 255, 0.7);
+}
+
 </style>

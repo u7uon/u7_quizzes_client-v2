@@ -2,7 +2,8 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
-
+import { useSignalR } from '../src/utils/hubConnection'
+import Cookies from 'js-cookie'
 // Global styles
 import './assets/styles/main.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -15,6 +16,9 @@ const app = createApp(App)
 // Setup Pinia for state management
 const pinia = createPinia()
 app.use(pinia)
+
+
+app.use(useSignalR)
 
 // Setup Vue Router
 app.use(router)

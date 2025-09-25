@@ -1,5 +1,5 @@
 <template>
-  <footer class="footer text-center mt-5">
+  <footer class="footer text-center ">
     <div class="container">
       <p>© 2024 u7 Quizzi. Tất cả các quyền được bảo lưu.</p>
       <div>

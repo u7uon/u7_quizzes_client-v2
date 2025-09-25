@@ -37,7 +37,22 @@ export default {
     } catch (error) {
       return { isSuccess: false, message: getErrorMessage(error) }
     }
+  },
+
+
+  async refreshToken() {
+    try {
+      await AxiosClient.post('auth/refresh-token') 
+      return true
+    }
+    catch (error) {
+      console.error('Refresh token error:', getErrorMessage(error))
+      return false
+    }
   }
+
+
+
 }
 
 // Hàm xử lý lỗi trả về từ server

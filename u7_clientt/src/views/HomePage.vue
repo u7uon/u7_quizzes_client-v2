@@ -85,6 +85,7 @@
               v-for="(quiz, index) in trendingQuizzes" 
               :key="quiz.quizId" 
               class="quiz-card-wrapper trending-item"
+              @click="$router.push(`/quiz/details?quizId=5`)"
             >
               <div class="trending-rank">#{{ index + 1 }}</div>
               <QuizCard :quiz="quiz" />
@@ -389,7 +390,8 @@ export default {
 <style scoped>
 /* Global Styles */
 .home-container {
-  overflow-x: hidden;
+  overflow: hidden;
+
 }
 
 .section-spacing {
