@@ -83,17 +83,15 @@
 </template>
 
 <script setup>
-
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute ,useRouter} from 'vue-router'
-import AxiosClient from '../utils/AxiosClient';
-
+import AxiosClient from '../utils/axiosClient';
+import { useSignalR } from '../utils/hubConnection';
+const {signalR,connect} = useSignalR()
 const route = useRoute()
 const router = useRouter()
 const roomCode = ref(route.query.roomCode || '')
 const displayName = ref('')
-const participant = reactive({ ParticipantId: '', DisplayName: '' })
-const participants = ref([])
 
 
 
@@ -110,10 +108,11 @@ async function handleJoin() {
     AxiosClient.post(`session/join`, {
       AccessCode: roomCode.value,
       DisplayName: displayName.value
-    }).then(res => {
+    }).then(async res => {
         const participantId = res.participantId
-        // signalR.invoke("JoinSession", parseInt(roomCode.value), participantId)
-        // You can redirect to the game page here if needed
+        await connect();
+        await signalR.invoke("JoinSession",parseInt(participantId),roomCode.value)
+        console.log("connect",signalR.connection.connectionId)
        router.push({ 
                 name: 'multiplayer',
                 params: { participantId },
@@ -121,7 +120,6 @@ async function handleJoin() {
                 })
     }).catch(err => {
         console.error('Join failed:', err)
-        alert('Tham gia phòng thất bại. Vui lòng kiểm tra mã phòng và thử lại.')
     })
   
 }

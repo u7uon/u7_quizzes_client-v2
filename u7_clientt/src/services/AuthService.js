@@ -1,4 +1,4 @@
-import AxiosClient from '../utils/AxiosClient'
+import AxiosClient from '../utils/axiosClient'
 
 export default {
   async login(loginDto) {

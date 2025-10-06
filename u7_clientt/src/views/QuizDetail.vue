@@ -130,7 +130,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AxiosClient from '../utils/AxiosClient'
+import AxiosClient from '../utils/axiosClient'
 
 // Composables
 const route = useRoute()

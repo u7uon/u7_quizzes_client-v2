@@ -1,4 +1,4 @@
-<template>
+<template >
   <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
       <router-link class="navbar-brand d-flex align-items-center" to="/">
@@ -60,6 +60,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import axios from '../utils/axiosClient'
 
+import infoSound from "../assets/sounds/info.mp3"
+import warningSound from "../assets/sounds/warning.mp3"
+
+const infos = new Audio(infoSound)
+const warnings = new Audio(warningSound)
+
 const userStore = useUserStore()
 const isNavbarOpen = ref(false)
 const currentUser = computed(() => userStore.currentUser)
@@ -70,14 +76,6 @@ const toggleNavbar = () => {
 
 const logout = async () => {
   await userStore.logout()
-}
-
-const test = async () => {
-  try {
-    await axios.get('auth/me')
-  } catch (error) {
-    console.error('Test API call failed:', error)
-  }
 }
 
 onMounted(() => {

@@ -1,9 +1,12 @@
 <template>
   <div class="lobby-container" v-if="!isStarted">
+      <button class="close-btn" @click="showLeaveConfirm" title="Đóng phòng chơi">
+      <i class="fas fa-times"></i>
+    </button> 
     <div class="lobby-header">
       <h1 class="lobby-title">
         <i class="fas fa-users"></i>
-        Phòng Chờ
+        Phòng Chơi
       </h1>
       <div class="participant-count">
         <span class="count-badge">{{ participants.length }} người tham gia</span>
@@ -35,42 +38,55 @@
     </div>
 
     <div v-if="participants.length" class="lobby-actions">
-      <button class="btn btn-danger" @click="leaveSession">
+      <button class="btn btn-danger" @click="showLeaveConfirm">
         <i class="fa-solid fa-arrow-right-from-bracket"></i>
         Rời phòng
       </button>
     </div>
 
-    <!-- Remove Confirmation Modal -->
-    <div v-if="showRemoveModal" class="modal-overlay" @click="hideRemoveConfirm">
+    <!-- Leave Confirmation Modal -->
+    <div v-if="showLeaveModal" class="modal-overlay" @click="hideLeaveConfirm">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <i class="fas fa-exclamation-triangle modal-icon"></i>
-          <h3 class="modal-title">Xác nhận loại bỏ</h3>
+          <h3 class="modal-title">Rời khỏi phòng chơi</h3>
         </div>
         <div class="modal-body">
-          <div class="participant-preview">
-            <img 
-              :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant?.displayName || '')}&background=ef4444&color=ffffff&size=50&rounded=true`"
-              :alt="selectedParticipant?.displayName"
-              class="preview-avatar"
-            />
-            <div class="preview-info">
-              <strong>{{ selectedParticipant?.displayName }}</strong>
-              <span class="preview-id">ID: {{ selectedParticipant?.participantId }}</span>
-            </div>
-          </div>
           <p class="modal-message">
-            Bạn có chắc chắn muốn loại bỏ người chơi này khỏi phòng? 
-            Họ sẽ phải tham gia lại để tiếp tục chơi.
+            Bạn có chắc chắn muốn rời khỏi phòng này không? Bạn sẽ không thể tham gia trò chơi nếu rời khỏi phòng.
           </p>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-cancel" @click="hideRemoveConfirm">
+          <button class="btn btn-cancel" @click="hideLeaveConfirm">
+            <i class="fas fa-times"></i>
+            Ở lại
+          </button>
+          <button class="btn btn-danger" @click="confirmLeave">
+            <i class="fas fa-sign-out-alt"></i>
+            Rời phòng
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Remove Confirmation Modal -->
+    <div v-if="showRemoveModal" class="modal-overlay" @click="hideLeaveCofirm">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <i class="fas fa-exclamation-triangle modal-icon"></i>
+          <h3 class="modal-title">Bạn muốn rời khỏi phòng</h3>
+        </div>
+        <div class="modal-body">
+          <p class="modal-message">
+            Bạn có chắc chắn muốn rời khỏi phòng này? 
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" @click="hideLeaveCofirm">
             <i class="fas fa-times"></i>
             Hủy bỏ
           </button>
-          <button class="btn btn-danger" @click="confirmRemove">
+          <button class="btn btn-danger" @click="confirmLeave">
             <i class="fas fa-user-times"></i>
             Loại bỏ
           </button>
@@ -92,9 +108,25 @@
 
     <!-- Question Display -->
     <div v-else-if="currentQuestion" class="question-container">
+      <!-- Scoreboard -->
+      <section class="scoreboard" v-if="inGame">
+        <div class="score-item">
+          <div class="label">Đúng</div>
+          <div class="value" :class="{ flash: flashField === 'correct' }">{{ correctCount }}</div>
+        </div>
+        <div class="score-item">
+          <div class="label">Sai</div>
+          <div class="value" :class="{ flash: flashField === 'wrong' }">{{ wrongCount }}</div>
+        </div>
+        <div class="score-item score-total">
+          <div class="label">Điểm</div>
+          <div class="value" :class="{ flash: flashField === 'score' }">{{ score }}</div>
+        </div>
+      </section>
+
       <div class="question-header">
         <div class="question-number">
-          Câu hỏi {{ currentQuestionIndex + 1 }}
+          Câu hỏi {{ currentQuestionIndex  }}
         </div>
         <div class="timer" :class="{ 'timer-warning': timeRemaining <= 10 }">
           <i class="fas fa-clock"></i>
@@ -200,17 +232,55 @@
       </div>
     </div>
 
-    <!-- Session Ended -->
+   <!-- Session Ended -->
     <div v-else-if="sessionEnded" class="session-ended">
-      <div class="ended-content">
-        <i class="fas fa-flag-checkered"></i>
-        <h2>Phiên chơi đã kết thúc!</h2>
-        <p>Cảm ơn bạn đã tham gia</p>
-        <button class="btn btn-primary" @click="backToHome">
-          <i class="fas fa-home"></i>
-          Về trang chủ
-        </button>
+      <template v-if="endState === 'ended'"  class="countdown-screen"  >
+        <div class="countdown-content">
+        <h2 class="countdown-title">Kết thúc</h2>
+        <p class="countdown-message">Cảm ơn bạn đã tham gia</p>
       </div>
+      </template>
+      <template v-else-if="endState === 'loading'">
+        <div class="waiting-screen">
+          <div class="loading-spinner"></div>
+          <p>Đang tải bảng xếp hạng...</p>
+        </div>
+      </template>
+      <template v-else-if="endState === 'leaderboard'">
+        <div class="leaderboard-content">
+          <i class="fas fa-trophy"></i>
+          <h2>Bảng Xếp Hạng</h2>
+          <div class="leaderboard-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hạng</th>
+                  <th>Người chơi</th>
+                  <th>Điểm</th>
+                  <th>Đúng</th>
+                  <th>Sai</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="player in leaderboardData.participants" :key="player.participant.participantId" :class="getRankClass(player.rank)">
+                  <td class="rank">
+                    <span v-if="player.rank > 3">{{ player.rank }}</span>
+                    <i v-else :class="['fas fa-medal', getMedalClass(player.rank)]"></i>
+                  </td>
+                  <td>{{ player.participant.displayName }}</td>
+                  <td>{{ player.score }}</td>
+                  <td>{{ player.correctAnsCount }}</td>
+                  <td>{{ player.wrongAwnserCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-primary" @click="backToHome">
+            <i class="fas fa-home"></i>
+            Về trang chủ
+          </button>
+        </div>
+      </template>
     </div>
 
     <!-- Waiting for Question -->
@@ -242,6 +312,17 @@
 import { ref, computed, onMounted, reactive, onUnmounted } from 'vue'
 import { useSignalR } from '../utils/hubConnection'
 import { useRouter, useRoute } from 'vue-router'
+import {showToast} from "../utils/toast"
+import _axios from "../utils/axiosClient"
+
+
+import incorrect from "../assets/sounds/incorrect.mp3"
+import correct from "../assets/sounds/correct.mp3"
+import ticking from '../assets/sounds/ticking.mp3'
+import { ConsoleLogger } from '@microsoft/signalr/dist/esm/Utils'
+const tickingSound = new Audio(ticking)
+const incorrectSound = new Audio(incorrect)
+const correctSound = new Audio(correct)
 
 
 const isStarted = ref(false)
@@ -256,6 +337,13 @@ const timeRemaining = ref(0)
 const sessionEnded = ref(false)
 let timerInterval = null
 
+// Score tracking variables
+const inGame = ref(false)
+const correctCount = ref(0)
+const wrongCount = ref(0)
+const score = ref(0)
+const flashField = ref('')
+
 const { signalR, connect, disconnect } = useSignalR()
 
 const router = useRouter()
@@ -268,11 +356,13 @@ const showResultDialog = ref(false) // Changed from showResult
 const accessCode = route.query.accesscode
 const participantId = route.params.participantId 
 const roomCode = ref('') 
-
-
-// Remove modal states
+const leaderboardData = ref(null)
+const endState = ref(null)
+// Modal states
 const showRemoveModal = ref(false)
-const selectedParticipant = ref(null)
+const showLeaveModal = ref(false)
+
+console.log("con ", signalR.connection.connectionId)
 
 const canSubmit = computed(() => {
   if (!currentQuestion.value) return false
@@ -284,10 +374,102 @@ const canSubmit = computed(() => {
   return selectedAnswers.value.length > 0
 })
 
+const playsound = (sound) => sound.play()
 
+// Flash effect function
+function flashScoreField(field) {
+  flashField.value = field
+  setTimeout(() => {
+    flashField.value = ''
+  }, 600)
+}
+
+// Setup beforeunload event to handle page close/refresh
+function setupBeforeUnloadHandler() {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('unload', handleUnload)
+}
+
+// Remove beforeunload event handler
+function removeBeforeUnloadHandler() {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('unload', handleUnload)
+}
+
+// Handle beforeunload - set flag for refresh detection
+function handleBeforeUnload(event) {
+  // Mark that we're potentially refreshing
+  sessionStorage.setItem('isRefreshing', 'true')
+  sessionStorage.setItem('lastActivity', Date.now().toString())
+}
+
+// Handle unload - only leave session if NOT refreshing
+async function handleUnload(event) {
+  const isRefreshing = sessionStorage.getItem('isRefreshing')
+  
+  // Don't leave session if we're just refreshing
+  if (isRefreshing === 'true') {
+    console.log('Page refresh detected - keeping session')
+    return
+  }
+  
+  // Only leave session when actually closing tab/browser
+  if (!sessionEnded.value && !isLeavingSession.value && signalR && participantId) {
+    try {
+      // Use sendBeacon for reliable data sending during page unload
+      const data = JSON.stringify({
+        participantId: parseInt(participantId),
+        accessCode: accessCode
+      })
+        await signalR.invoke("LeaveSession", parseInt(participantId), accessCode)
+    } catch (error) {
+      console.error('Error during unload leave:', error)
+    }
+  }
+}
+
+// Simple leave control
+const isLeavingSession = ref(false)
 
 onMounted(async () => {
-  await connect()
+  // Check if this is a page refresh
+  const isRefreshing = sessionStorage.getItem('isRefreshing')
+  const lastActivity = sessionStorage.getItem('lastActivity')
+  const now = Date.now()
+  
+  if (isRefreshing === 'true' && lastActivity) {
+    const timeDiff = now - parseInt(lastActivity)
+    
+    // If last activity was within 3 seconds, it's definitely a refresh
+    if (timeDiff < 3000) {
+      console.log('Page was refreshed - reconnecting to existing session')
+      sessionStorage.removeItem('isRefreshing')
+      
+      // Reconnect to SignalR if needed
+      if (!signalR || signalR.state !== 'Connected') {
+        await connect()
+      }
+      
+    }
+  } else {
+    // First time loading - connect normally
+    await connect()
+  }
+
+  try {
+    participants.value = await _axios.get(`session/participants?acesscode=${accessCode}`)
+
+  }
+  catch(e){
+    showToast.error(e.message)
+  }
+
+  
+  // Clear the refresh flag after mounting
+  sessionStorage.removeItem('isRefreshing')
+
+  // Setup page unload handlers
+  setupBeforeUnloadHandler()
 
   signalR.on("Participants", data => {
     console.log("Received participants:", data)
@@ -295,40 +477,36 @@ onMounted(async () => {
   })
 
   signalR.on("SessionClosed", async () => {
-    alert('Phiên làm bài đã kết thúc.')
-    await disconnect()
-    router.push('/')
+    sessionEnded.value = true
+    ClearConnection()
+    removeBeforeUnloadHandler()
+    router.push('/join')
   })
 
-
-signalR.on("AnswerSubmitted", (res) => {
-
-  submittedQuestions.value.push(res)
-
-  if (res.participantId === parseInt(participantId)) {
-    lastResult.value = {
-      isCorrect: res.isCorrect,
-      score: res.score
+  signalR.on("AnswerSubmitted", (res) => {
+    submittedQuestions.value.push(res)
+    if (res.participantId === parseInt(participantId)) {
+      lastResult.value = {
+        isCorrect: res.isCorrect,
+        score: res.score
+      }
     }
-    
-    // Only show result dialog when timer reaches 0 or question ends
-    // This will be triggered in the timer logic
-  }
-})
+  })
+  
   signalR.on("SessionStarted" , () => {
     isStarted.value = true
+    inGame.value = true
     showCountdown.value = true
     startCountdown()
   })
 
   signalR.on("ReceiveQuestion", (question) => {
-    console.log("Received question:", question)
     currentQuestion.value = question
     hasSubmitted.value = false
     selectedAnswers.value = []
     shortAnswer.value = ''
-    showResultDialog.value = false // Hide any previous result dialog
-    
+    showResultDialog.value = false
+    currentQuestionIndex.value++
     // Start timer based on question timeLimit (convert ms to seconds)
     timeRemaining.value = Math.floor(question.timeLimit / 1000)
     startQuestionTimer()
@@ -336,38 +514,78 @@ signalR.on("AnswerSubmitted", (res) => {
 
   signalR.on("SessionEnded", () => {
     sessionEnded.value = true
+    inGame.value = false
     currentQuestion.value = null
     clearInterval(timerInterval)
+    removeBeforeUnloadHandler()
+    //ClearConnection()
   })
 
   signalR.on("NewJoined" , participant => {
-    console.log("New participant joined:", participant)
+    showToast.info(participant.displayName + "đã tham gia",{timeout : 2000})
     participants.value.push(participant)
   })
 
   signalR.on("SessionNotFound", () => {
     alert('Phiên làm bài không tồn tại hoặc đã kết thúc.')
+    sessionEnded.value = true
+    removeBeforeUnloadHandler()
     router.push('/')
+  })
+
+
+  signalR.on("Leaderboard", async (data) => {
+    console.log("Received leaderboard:", data)
+    leaderboardData.value = data
+    endState.value = 'leaderboard'
+
+    await ClearConnection() 
+    removeBeforeUnloadHandler() 
+  
   })
 
   signalR.on("ParticipantRemoved",  async (removedParticipantId) =>{
     if(participantId == removedParticipantId){
-      alert('Bạn đã bị loại khỏi phòng.')
       await removedFromSession()
     }   
-
-    participants.value = participants.value.filter(p => p.participantId !== participantId)
+    var p = participants.value.find( (x) => x.participantId === removedParticipantId )
+    participants.value = participants.value.filter(p => p.participantId !== removedParticipantId)
+    
+    showToast.warning(p.displayName + "đã bị xóa khỏi phòng.")
   })
 
-
-  await signalR.invoke("JoinSession", parseInt(participantId), accessCode   ) 
-
+  signalR.on("ParticipantLeft", (participantId) => {
+    var p = participants.value.find( (x) => x.participantId === participantId )
+    participants.value = participants.value.filter(p => p.participantId !== participantId)
+    
+    showToast.warning(p.displayName + "đã rời khỏi phòng.")
+  })
 
 })
 
 onUnmounted(() => {
   clearInterval(timerInterval)
+  // Only remove handler if we're intentionally leaving (not refreshing)
+  if (!sessionStorage.getItem('isRefreshing')) {
+    leaveSession()
+    removeBeforeUnloadHandler()
+    ClearConnection()
+    showToast.clear()
+  }
 })
+
+function getRankClass(rank) {
+  if (rank === 1) return 'rank-gold'
+  if (rank === 2) return 'rank-silver'
+  if (rank === 3) return 'rank-bronze'
+  return ''
+}
+
+function getMedalClass(rank) {
+  if (rank === 1) return 'gold'
+  if (rank === 2) return 'silver'
+  if (rank === 3) return 'bronze'
+}
 
 function startCountdown() {
   const countdownInterval = setInterval(() => {
@@ -384,17 +602,30 @@ function startQuestionTimer() {
   clearInterval(timerInterval)
   timerInterval = setInterval(() => {
     timeRemaining.value--
-    if (timeRemaining.value <= 0) {
+    if (timeRemaining.value == 0) {
       clearInterval(timerInterval)
-      
       // Auto submit if time runs out
       if (!hasSubmitted.value) {
+       console.log("Here")
         submitAnswer()
       }
-      
-      // Show result dialog when timer ends (if we have a result)
       if (lastResult.value) {
         showResultDialog.value = true
+        if (lastResult.value.isCorrect) {
+          correctCount.value++
+          flashScoreField('correct')
+          playsound(correctSound)
+        } else {
+          wrongCount.value++
+          flashScoreField('wrong')
+          playsound(incorrectSound)
+        }
+        
+        // Update total score
+        score.value += lastResult.value.score
+        setTimeout(() => {
+          flashScoreField('score')
+        }, 300)
         
         // Hide dialog after 2 seconds
         setTimeout(() => {
@@ -402,7 +633,10 @@ function startQuestionTimer() {
         }, 2000)
       }
     }
+    if(timeRemaining.value === 8 )
+        playsound(tickingSound)
   }, 1000)
+  
 }
 
 function selectAnswer(answerId, type) {
@@ -428,7 +662,7 @@ async function submitAnswer() {
     }
     
     await signalR.invoke("SubmitAnswer", accessCode, responseData)
-    currentQuestionIndex.value++
+    console.log("auto submitting")
   } catch (error) {
     console.error('Error submitting answer:', error)
     hasSubmitted.value = false
@@ -436,13 +670,36 @@ async function submitAnswer() {
 }
 
 function backToHome() {
+  isLeavingSession.value = true
+  removeBeforeUnloadHandler()
   router.push('/')
 }
 
-async function  leaveSession() {
+// Show leave confirmation modal
+function showLeaveConfirm() {
+  showLeaveModal.value = true
+}
+
+// Hide leave confirmation modal
+function hideLeaveConfirm() {
+  showLeaveModal.value = false
+}
+
+// Confirm leave and execute leave session
+async function confirmLeave() {
+  showLeaveModal.value = false
+  isLeavingSession.value = true
+  await leaveSession()
+}
+
+async function leaveSession() {
+  // Clear refresh flag to ensure we actually leave
+  sessionStorage.removeItem('isRefreshing')
+  
   try{
-    await signalR.invoke("LeaveSession", parseInt(participantId) , accessCode  )
-    await disconnect()  
+    await signalR.invoke("LeaveSession", parseInt(participantId) , accessCode)
+    ClearConnection() 
+    removeBeforeUnloadHandler()
   }
   catch (err){
     console.error('Error leaving session:', err)
@@ -450,28 +707,94 @@ async function  leaveSession() {
   finally {
     router.push('/')
   }
- 
 }
 
-async  function removedFromSession() {
- signalR.clearAllEvents()
-  await disconnect()
-  
+async function removedFromSession() {
+  isLeavingSession.value = true
+  sessionStorage.removeItem('isRefreshing')
+  ClearConnection() 
+  removeBeforeUnloadHandler()
   router.push('/join')
 }
 
-function copyRoomCode() {
-  if (roomCode.value) {
-    navigator.clipboard.writeText(roomCode.value)
-      .then(() => alert('Đã sao chép mã phòng!'))
-      .catch(() => alert('Không thể sao chép mã'))
-  }
+// Legacy function for existing modal
+function hideLeaveCofirm() {
+  showRemoveModal.value = false
 }
 
+// Simple close lobby function - chỉ hiện modal xác nhận
+function closeLobby() {
+  showLeaveConfirm()
+}
 
+async function ClearConnection() {
+ signalR.clearAllEvents()
+ await disconnect()
+}
 </script>
 
+
 <style scoped>
+    .scoreboard {
+  position: fixed;
+  top: 20px;               
+  left: 50%;
+  transform: translateX(-50%); 
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 15px 25px;
+  border-radius: 12px;
+  z-index: 9999;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;           /* dùng flexbox */
+  align-items: center;     /* căn giữa theo chiều dọc */
+  gap: 25px;              /* khoảng cách giữa các item */
+  min-width: auto;        /* cho phép tự động điều chỉnh */
+}
+
+/* Loại bỏ tiêu đề scoreboard không cần thiết */
+.scoreboard h3 {
+  display: none;
+}
+
+/* Các item điểm nằm ngang */
+.scoreboard .score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 60px;
+}
+
+.scoreboard .score-item .label {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.9;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scoreboard .score-item .value {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Màu sắc cho từng loại điểm */
+.scoreboard .score-item:nth-child(1) .value {
+  color: #22c55e; /* xanh lá cho đúng */
+}
+
+.scoreboard .score-item:nth-child(2) .value {
+  color: #ef4444; /* đỏ cho sai */
+}
+
+.scoreboard .score-item.score-total .value {
+  color: #fbbf24; /* vàng cho tổng điểm */
+}
 .lobby-container {
     width : 100%;
     margin: 0 auto;
@@ -606,7 +929,39 @@ function copyRoomCode() {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     margin-bottom: 0.5rem;
 }
+.close-btn {
+    position: relative;
+    float : right;
+    top: 1.3rem;
+    right: 1.3rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 0, 0, 0.5);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
 
+.close-btn:hover {
+    background: rgba(239, 68, 68, 0.9);
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(239, 68, 68, 0.3);
+}
+
+.close-btn i {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
 .qr-code img {
     display: block;
     border-radius: 8px;
@@ -639,31 +994,6 @@ function copyRoomCode() {
     background: white;
 }
 
-.code-input:focus {
-    outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-
-.btn-join {
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-}
-
-.btn-join:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
 
 /* Existing styles continue... */
 .participants-grid {
@@ -1126,6 +1456,7 @@ function copyRoomCode() {
     display: flex;
     align-items: center;
     gap: 1rem;
+    margin-bottom: 10px;
     padding: 0.9rem 1rem;
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.04);
@@ -1593,6 +1924,116 @@ function copyRoomCode() {
 .answer-checkbox:focus-within {
     outline: 3px solid rgba(124,58,237,0.16);
     outline-offset: 2px;
+}
+
+/* Leaderboard Styles */
+.leaderboard-content {
+    text-align: center;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    padding: 2.5rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 10px 40px rgba(2,6,23,0.6);
+    width: 100%;
+    max-width: 900px;
+}
+
+.leaderboard-content h2 {
+    margin: 0.5rem 0;
+    color: #fff;
+    font-size: 1.6rem;
+}
+
+.leaderboard-table {
+    margin: 1rem 0 2rem;
+}
+
+.leaderboard-table table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.75rem;
+}
+
+.leaderboard-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    color: #a7c4ff;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.leaderboard-table td {
+    padding: 1rem;
+    background: rgba(255,255,255,0.01);
+    border: 1px solid rgba(255,255,255,0.03);
+    border-radius: 8px;
+    color: #e6eef8;
+    font-weight: 600;
+}
+
+.leaderboard-table tr td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.leaderboard-table tr td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.rank {
+    text-align: center;
+    font-weight: bold;
+    width: 80px;
+}
+
+.fa-medal {
+    font-size: 1.5rem;
+}
+
+.gold {
+    color: #ffd700;
+}
+
+.silver {
+    color: #c0c0c0;
+}
+
+.bronze {
+    color: #cd7f32;
+}
+
+.rank-gold td {
+    background: linear-gradient(90deg, rgba(255,215,0,0.08), rgba(255,255,255,0.01));
+}
+
+.rank-silver td {
+    background: linear-gradient(90deg, rgba(192,192,192,0.08), rgba(255,255,255,0.01));
+}
+
+.rank-bronze td {
+    background: linear-gradient(90deg, rgba(205,127,50,0.08), rgba(255,255,255,0.01));
+}
+
+/* Responsive tweaks for leaderboard */
+@media (max-width: 900px) {
+    .leaderboard-table th, .leaderboard-table td {
+        padding: 0.75rem;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .leaderboard-table th, .leaderboard-table td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+    .rank {
+        width: 60px;
+    }
+    .fa-medal {
+        font-size: 1.2rem;
+    }
 }
 
 </style>

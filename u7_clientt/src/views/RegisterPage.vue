@@ -203,7 +203,7 @@
       <div class="branding-content">
         <div class="logo-section">
           <a href="/" class="logo-icon">
-            <img src="../assets/img/logo.png" alt="" width="150" height="150" />
+            <img src="../assets/img/logo.png" alt="" width="80" height="80" />
           </a>
         </div>
         <div class="feature-highlights">

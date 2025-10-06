@@ -149,8 +149,9 @@ import { ref, computed, onMounted, reactive, onBeforeMount, onBeforeUnmount, onU
 import { useSignalR } from '../utils/hubConnection'
 import Cookies from 'js-cookie'
 import { useRouter, useRoute } from 'vue-router'
-import AxiosClient from '../utils/AxiosClient'
+import AxiosClient from '../utils/axiosClient'
 import _auth from "../services/AuthService";
+import {showToast} from '../utils/toast'
 
 const { signalR, isConnected, connectionState, connect, disconnect } = useSignalR()
 
@@ -167,13 +168,16 @@ const currentSession = reactive({
 
 const sessionID = route.params.sessionId 
 const roomCode = ref('') 
-const enteredCode = ref('')
 const domain = import.meta.env.VITE_APP_URL 
 const isLeavingIntentionally = ref(false)
 
 // Remove modal states
 const showRemoveModal = ref(false)
 const selectedParticipant = ref(null)
+
+
+const leaderboard = reactive(null);
+const leaderboard_show = ref(false) 
 
 const qrCodeUrl = computed(() => {
   if (!roomCode.value) return ''
@@ -186,7 +190,6 @@ const roomLink = computed(() => {
   return `${domain}/join?roomCode=${roomCode.value}`
 })
 
-const hubConnection = ref(null)
 const sessionReady = ref(false)
 
 // Handle browser refresh/close
@@ -214,19 +217,19 @@ const handleRouterNavigation = async (to, from, next) => {
 }
 
 onMounted(async () => {
-  if (!sessionID) {
-    alert('Quiz ID is required to create a session.')
-    router.push('/')
-    return
-  }
 
-  if(!Cookies.get('access_token')) {
-    if(! await _auth.refreshToken()) {
-      alert('You must be logged in to create a session.')
-      router.push('/login')
+    if (!sessionID) {
+      showToast.warning("Phiên không tồn tại hoặc đã kết thúc")
+      router.push('/')
       return
     }
-  }
+
+    if(!Cookies.get('access_token')) {
+      if(! await _auth.refreshToken()) {
+        router.push('/login')
+        return
+      }
+    }
 
   // Add browser beforeunload listener
   window.addEventListener('beforeunload', handleBeforeUnload)
@@ -237,7 +240,6 @@ onMounted(async () => {
   await connect()
 
   signalR.on("SessionCreated", session => {
-    console.log("Session created:", session)
     currentSession.QuizId = session.quizId
     currentSession.SessionID = session.sessionID
     currentSession.AccessCode = session.accessCode
@@ -248,22 +250,41 @@ onMounted(async () => {
   })
 
   signalR.on("NewJoined" , participant => {
-    console.log("New participant joined:", participant)
+    showToast.info(participant.displayName + " đã tham gia")
+    console.log("Người chơi tham giaaaaa")
     participants.value.push(participant)
+
   })
 
   signalR.on("SessionNotFound", () => {
-    alert('Phiên làm bài không tồn tại hoặc đã kết thúc.')
+    showToast.error('Phiên làm bài không tồn tại hoặc đã kết thúc.')
+    setTimeout( () => {
     router.push('/')
+    },1000)
+  })
+
+
+  signalR.on("SessionEnded" ,()=> {
+    // 1. Noti to host
+    // 2. Display leadrboard ( later)
   })
 
   signalR.on("ParticipantRemoved", participantId => {
+    var p = participants.value.find( x => x.participantId ==participantId )
+    showToast.warning(p.displayName + " đã bị xóa khỏi phòng")
     participants.value = participants.value.filter(p => p.participantId !== participantId)
   })
 
 
   signalR.on("ParticipantLeft", participantId => {
+    var p = participants.value.find( x => x.participantId === participantId)
+    showToast.warning(p.displayName + " đã rời phòng")
     participants.value = participants.value.filter(p => p.participantId !== participantId)
+  })
+
+  signalR.on("Leaderboard", (data) => {
+    leaderboard = data 
+    leaderboard_show.value = true
   })
 
 
@@ -313,7 +334,7 @@ async function confirmRemove() {
     hideRemoveConfirm()
   } catch (err) {
     console.error('Error removing participant:', err)
-    alert('Có lỗi xảy ra khi loại bỏ người chơi. Vui lòng thử lại.')
+    showToast.warning('Có lỗi xảy ra khi loại bỏ người chơi. Vui lòng thử lại.')
   }
 }
 
@@ -338,16 +359,13 @@ async function refreshParticipants() {
 function copyRoomCode() {
   if (roomCode.value) {
     navigator.clipboard.writeText(roomCode.value)
-      .then(() => alert('Đã sao chép mã phòng!'))
-      .catch(() => alert('Không thể sao chép mã'))
   }
 }
 
 function copyRoomLink() {
   if (roomLink.value) {
     navigator.clipboard.writeText(roomLink.value)
-      .then(() => alert('Đã sao chép link phòng!'))
-      .catch(() => alert('Không thể sao chép link'))
+
   }
 }
 
@@ -363,6 +381,7 @@ async function closeLobby() {
     if (currentSession.SessionID) {
       await signalR.invoke('EndSession', parseInt(currentSession.SessionID) , currentSession.AccessCode)
     }
+
     await disconnect()
     router.push('/')
   } catch (error) {

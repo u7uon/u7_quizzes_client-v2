@@ -267,28 +267,28 @@ export default {
       ]
     }
 
-    // Methods
-    const animateCounters = () => {
-      const counters = [counter1.value, counter2.value, counter3.value]
-      counters.forEach((counter) => {
-        if (!counter) return
-        const target = parseInt(counter.dataset.target)
-        const increment = target / 100
-        let current = 0
+    // // Methods
+    // const animateCounters = () => {
+    //   const counters = [counter1.value, counter2.value, counter3.value]
+    //   counters.forEach((counter) => {
+    //     if (!counter) return
+    //     const target = parseInt(counter.dataset.target)
+    //     const increment = target / 100
+    //     let current = 0
         
-        const updateCounter = () => {
-          if (current < target) {
-            current += increment
-            counter.textContent = Math.floor(current).toLocaleString()
-            requestAnimationFrame(updateCounter)
-          } else {
-            counter.textContent = target.toLocaleString()
-          }
-        }
+    //     const updateCounter = () => {
+    //       if (current < target) {
+    //         current += increment
+    //         counter.textContent = Math.floor(current).toLocaleString()
+    //         requestAnimationFrame(updateCounter)
+    //       } else {
+    //         counter.textContent = target.toLocaleString()
+    //       }
+    //     }
         
-        updateCounter()
-      })
-    }
+    //     updateCounter()
+    //   })
+    // }
 
     const scrollToTrending = () => {
       if (trendingSection.value) {
@@ -326,53 +326,49 @@ export default {
     }
 
     // Setup intersection observer for animations
-    const setupScrollAnimations = () => {
-      const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-      }
+    // const setupScrollAnimations = () => {
+    //   const observerOptions = {
+    //     threshold: 0.1,
+    //     rootMargin: '0px 0px -50px 0px'
+    //   }
 
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1'
-            entry.target.style.transform = 'translateY(0)'
+    //   const observer = new IntersectionObserver((entries) => {
+    //     entries.forEach(entry => {
+    //       if (entry.isIntersecting) {
+    //         entry.target.style.opacity = '1'
+    //         entry.target.style.transform = 'translateY(0)'
             
-            // Animate counters when hero section is visible
-            if (entry.target.classList.contains('hero-section')) {
-              setTimeout(animateCounters, 500)
-            }
-          }
-        })
-      }, observerOptions)
+    //         // Animate counters when hero section is visible
+    //         if (entry.target.classList.contains('hero-section')) {
+    //           setTimeout(animateCounters, 500)
+    //         }
+    //       }
+    //     })
+    //   }, observerOptions)
 
-      // Observe sections for scroll animations
-      const sections = document.querySelectorAll('section')
-      sections.forEach(section => {
-        section.style.opacity = '0'
-        section.style.transform = 'translateY(30px)'
-        section.style.transition = 'all 0.8s ease-out'
-        observer.observe(section)
-      })
+    //   // Observe sections for scroll animations
+    //   const sections = document.querySelectorAll('section')
+    //   sections.forEach(section => {
+    //     section.style.opacity = '0'
+    //     section.style.transform = 'translateY(30px)'
+    //     section.style.transition = 'all 0.8s ease-out'
+    //     observer.observe(section)
+    //   })
 
-      // Hero section should be visible immediately
-      const heroSection = document.querySelector('.hero-section')
-      if (heroSection) {
-        heroSection.style.opacity = '1'
-        heroSection.style.transform = 'translateY(0)'
-      }
-    }
+    //   // Hero section should be visible immediately
+    //   const heroSection = document.querySelector('.hero-section')
+    //   if (heroSection) {
+    //     heroSection.style.opacity = '1'
+    //     heroSection.style.transform = 'translateY(0)'
+    //   }
+    // }
 
     onMounted(async () => {
       await nextTick()
-      setupScrollAnimations()
     })
 
     return {
       trendingSection,
-      counter1,
-      counter2,
-      counter3,
       newsletterEmail,
       trendingQuizzes,
       recommendedQuizzes,
@@ -391,8 +387,9 @@ export default {
 /* Global Styles */
 .home-container {
   overflow: hidden;
-
 }
+
+
 
 .section-spacing {
   padding: 80px 0;
@@ -468,13 +465,10 @@ export default {
   background-size: 400% 400%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: gradientShift 3s ease-in-out infinite;
 }
 
 .typing-text {
   display: inline-block;
-  border-right: 3px solid white;
-  animation: typing 4s steps(12) infinite, blink 1s infinite;
 }
 
 .hero-description {
